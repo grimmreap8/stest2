@@ -1,6 +1,0 @@
-pyyaml
-requests
-tqdm
-colorama
-six
-requests_toolbelt

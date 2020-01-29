@@ -8,7 +8,7 @@ agent:
 execution_time_limit:
   hours: 3
 blocks:
-  - name: etest
+  - name: test
     task:
       prologue:
         commands:
@@ -19,10 +19,10 @@ blocks:
           - mkdir .pip_cache
           - cache restore
           # Use --user to avoid permission conflicts
-          - pip install  --cache-dir .pip_cache -r requirements.txt
+          - pip install  --cache-dir .pip_cache pyyaml requests  tqdm colorama six requests_toolbelt
           - cache store  
       jobs:
-        - name: Run d
+        - name: Run 
           commands:
             - sem-version python 2.7
-            - python test download_input && python test meta_encode && python test meta_upload
+            - python test meta_all

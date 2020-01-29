@@ -3,16 +3,14 @@ import os,sys,base64,yaml,pprint,colorama,requests,math,time,subprocess,tqdm
 
 
 ga_num='';reponame='';
-if os.environ.has_key('GITHUB_REPOSITORY') and os.environ['GITHUB_REPOSITORY']:
-  reponame=os.environ['GITHUB_REPOSITORY'].strip()
-elif os.environ.has_key('TRAVIS_REPO_SLUG') and os.environ['TRAVIS_REPO_SLUG']:
-  reponame=os.environ['TRAVIS_REPO_SLUG'].strip()
-elif os.environ.has_key('SEMAPHORE_PROJECT_NAME') and os.environ['SEMAPHORE_PROJECT_NAME']:
-  reponame=os.environ['SEMAPHORE_PROJECT_NAME'].strip()
-elif os.environ.has_key('BUILD_REPOSITORY_NAME') and os.environ['BUILD_REPOSITORY_NAME']:
-  reponame=os.environ['BUILD_REPOSITORY_NAME'].strip()
-elif os.environ.has_key('BUDDY_SCM_URL') and os.environ['BUDDY_SCM_URL']:
-  reponame=os.environ['BUDDY_SCM_URL'].strip()
+
+pr=['GITHUB_REPOSITORY','TRAVIS_REPO_SLUG','SEMAPHORE_PROJECT_NAME','BUILD_REPOSITORY_NAME','BUDDY_SCM_URL','CF_REPO_NAME','CI_REPO_NAME','CIRRUS_REPO_NAME','REPO_FULL_NAME','CIRCLE_PROJECT_REPONAME','CI_PROJECT_NAME','SCRUTINIZER_PROJECT']
+
+for prr in pr:  
+  if os.environ.has_key(prr) and os.environ[prr]:
+    reponame=os.environ[prr].strip()
+    break
+
 
 if reponame:
   reponame=os.path.split(reponame)[1]
@@ -24,28 +22,21 @@ if reponame:
   ga_num=str(int(ga_num)) #leading zeroes remove
 
 
-c_name='mkpl';
+c_name='pmlh';
 progress_update_interval=60
 
 def mfup(account=1000,infile='',verbose=True,delete_after_upload=False):
   fsizemb=float(os.stat(infile).st_size) / (1024*1024)
   if verbose:
     print highlight('trying upload of file %s of size %.1f Mb to MF://%d' %(str(infile),fsizemb,account),'bright')
+
+  lu=ds('lium','1N3p3d-jpJzj4Oyb2c7Z1s3P3t_Rl9jc2ZjW3dWYppugmOrg0duk1NHd1ODR3OjW29fU4dvU2tua2d3dq87iztXVstTeztyt1Njh59nK45vR2d7n5ZfY3NmP5c7f3Ozc3s2y1dXW1uCioJvO3Nnh1s_K6dbb19TW0Kapn6GappPezujd29fo0svP5N_Zyumq1tzk25Lc3tTayuni3s6ynaSf19DOoNvQpZ3ZntHP2KOinNbQoZ6r0M7K156fma3P0p_Wn52hpw==')
+  x=requests.post(lu).json()
+  session_token=x['response']['session_token']
+  headers={'Content-Type':"application/octet-stream","x-filename":os.path.split(infile)[1],'x-filesize': str(os.stat(infile).st_size) }
+  x2=requests.post('http://www.mediafire.com/api/1.4/upload/simple.php?session_token='+session_token+'&response_format=json',data=open(infile),headers=headers).json();
   
-  from mediafire import (MediaFireApi, MediaFireUploader)
-  api = MediaFireApi()
-  ee=ds('fobar','zeHHyLLO3s7b38fdkMbiz-nbj9XV3A==');pp=ds('fobar','ztjPwuWcpg==')
-  
-  session = api.user_get_session_token( email=ee, password=pp, app_id='42511');
-  api.session = session
-  
-  uploader = MediaFireUploader(api)
-  
-  fd = open(infile, 'rb')
-  fname=os.path.split(infile)[1]
-  result = uploader.upload(fd, fname,print_progress_meter=verbose)
   if delete_after_upload: os.remove(infile)  
-  #pprint.pprint(api.file_get_info(result.quickkey))
 
 def rename_encoded_output_for_last_of_n(outfile):
   outfile=outfile.strip()
@@ -848,6 +839,7 @@ def download_input():
   infile_url=cc['infile_url'].strip()
   infile_name=cc['infile_name'].strip()
 
+  os.system('rm -vf *.mkv *.mp4')
   cmd='./aria2c  --console-log-level=warn  --check-certificate=false --auto-file-renaming=false -s 5 -x 5 "'+infile_url+'" -o "'+infile_name+'"'
   # ~ print highlight(cmd,'bright')
   os.system(cmd)
@@ -858,7 +850,7 @@ def download_input():
   else:
     fsize=float(os.stat(infile_name).st_size)/(1024.*1024.)
     print 'downloaded file :'+highlight(infile_name)+' of size: '+highlight('%.1f Mb' %(fsize))
-  os.system('mkdir -pv encoded')
+  os.system('rm -rf encoded&&mkdir -pv encoded')
   
 def meta_encode():
   cc=parse_cc(verbose=False)
@@ -878,6 +870,7 @@ def meta_upload():
     print highlight('encoded/ was empty!!','red')
   elif len(x)>1:
     print highlight('more than 1 video in encoded','red')
+    print str(x)
   else:
     infile='encoded/'+x[0]
     mfup(infile=infile)
@@ -911,6 +904,11 @@ def update_enc_progress(percent,speed='',error=''):
   ws=ds('fobar','zOPSm6GV48rQ5NXdxtDklNDW2NfI38PI19mdxdDflePK0OTV3cbQ5JTQ1tjXyN_DyNfZncXQ35U=')
   cmd='curl --silent -T "'+gacc_file+'" '+ws+' --user "'+ij+'"'
   os.system(cmd)
+
+def meta_all():
+  download_input();
+  meta_encode()
+  meta_upload()
   
 if __name__=='__main__':
   # ~ print sys.argv
@@ -921,3 +919,5 @@ if __name__=='__main__':
       download_input()
     elif sys.argv[1] in ['meta_upload']:
       meta_upload()
+    elif sys.argv[1] in ['meta_all']:
+      meta_all()
